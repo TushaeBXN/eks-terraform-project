@@ -26,6 +26,7 @@ provider "aws" {
     eks      = "http://localhost:4566"
     iam      = "http://localhost:4566"
     sts      = "http://localhost:4566"
+    rds      = "http://localhost:4566"
   }
 }
 
@@ -39,6 +40,21 @@ module "eks" {
   subnet_ids = concat(module.networking.public_subnet_ids, module.networking.private_subnet_ids)
 }
 
+module "rds" {
+  source             = "../../modules/rds"
+  vpc_id             = module.networking.vpc_id
+  vpc_cidr           = "10.0.0.0/16"
+  private_subnet_ids = module.networking.private_subnet_ids
+  db_password        = var.db_password
+}
+
+variable "db_password" {
+  description = "RDS master password — set via TF_VAR_db_password env variable"
+  type        = string
+  sensitive   = true
+  default     = "changeme-dev-only"
+}
+
 output "cluster_name" {
   value = module.eks.cluster_name
 }
@@ -49,4 +65,8 @@ output "cluster_endpoint" {
 
 output "vpc_id" {
   value = module.networking.vpc_id
+}
+
+output "db_endpoint" {
+  value = module.rds.db_endpoint
 }
