@@ -11,7 +11,7 @@ A team needs a Kubernetes cluster that can be torn down and rebuilt identically 
 
 ## Architecture
 
-![Architecture diagram](docs/architecture.jpeg)
+<img width="1380" height="752" alt="cluster" src="https://github.com/user-attachments/assets/b2f785f0-428e-4023-a481-503d6ece232b" />
 
 **Traffic flow:** Internet → Internet Gateway → Public Subnet → NAT Gateway → Private Subnet → EKS Node Group → Service (NodePort) → Pods
 
