@@ -24,6 +24,7 @@ A team needs a Kubernetes cluster that can be torn down and rebuilt identically 
 | **Remote state** | S3 (`brian-eks-tfstate`) + DynamoDB locking (`terraform-locks`) so anyone on the team can rebuild the cluster |
 | **Real workload** | nginx Deployment + NodePort Service deployed and verified with live HTTP traffic |
 | **Cost-aware validation** | Every `terraform plan/apply` validated against MiniStack (local AWS emulator) before touching a billed account; workload tested on a local `kind` cluster at $0 cloud spend |
+| **Database layer** | PostgreSQL RDS instance in private subnets — port 5432 scoped to the VPC CIDR only, storage encrypted, never publicly accessible |
 
 ## Project Structure
 
@@ -39,7 +40,11 @@ eks-terraform-project/
 │       │   ├── main.tf
 │       │   ├── variables.tf
 │       │   └── outputs.tf
-│       └── eks/                 # IAM roles, EKS cluster, managed node group
+│       ├── eks/                 # IAM roles, EKS cluster, managed node group
+│       │   ├── main.tf
+│       │   ├── variables.tf
+│       │   └── outputs.tf
+│       └── rds/                 # PostgreSQL RDS in private subnets, VPC-scoped SG
 │           ├── main.tf
 │           ├── variables.tf
 │           └── outputs.tf
@@ -93,6 +98,20 @@ curl http://localhost:8080
 ```
 
 You should see the nginx welcome page returned as raw HTML — confirmation that the Deployment, Service, and pod networking are all wired correctly.
+
+## Database
+
+The `rds` module provisions a PostgreSQL 15 instance wired into the private subnets. Key security decisions:
+
+- **Not publicly accessible** — nodes reach the database through the VPC; no public endpoint is exposed
+- **Security group scoped to VPC CIDR** — port 5432 only accepts connections from within `10.0.0.0/16`
+- **Storage encrypted** — `storage_encrypted = true` on the `aws_db_instance` resource
+- **Password via environment variable** — never hardcoded; pass `TF_VAR_db_password` at apply time
+
+```bash
+export TF_VAR_db_password="your-secure-password"
+terraform apply
+```
 
 ## Key Design Decisions
 
